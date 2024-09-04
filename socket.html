@@ -1,0 +1,49 @@
+<!-- @format -->
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.1/socket.io.js"></script>
+	</head>
+	<body>
+		<h1>Hello world</h1>
+	</body>
+
+	<script>
+		const socket = io('', { transports: ['websocket'] });
+		var locTimer = null;
+
+		socket.on('connect', () => {
+			console.log('Client connected');
+
+			// socket.emit('authenticate', '')
+			socket.emit('notice', { name: 'Black Valentine', age: 28 });
+			socket.emit(
+				'authenticate',
+				'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXlsb2FkIjp7InVzZXJfaWQiOjEsInJvbGUiOiJ1c2VyIn0sImV4cCI6MTcyNTMzMzQ5OSwiaWF0IjoxNzI1MzI5ODk5fQ.OuuEk3UgRmeA0nl_Zm9X8T9EWXoDqXWVCXFcKaszwiA'
+			);
+		});
+
+		socket.on('test', (msg) => console.log('test:', msg));
+		socket.on('notice', (p) => console.log('notice:', p));
+
+		socket.on('authenticate', (msg) => {
+			console.log('authenticated:', msg);
+			if (locTimer != null) {
+				clearInterval(locTimer);
+			}
+
+			locTimer = setInterval(() => {
+				socket.emit('UserUpdateLocation', { lat: 123, lng: 100 });
+			}, 3000);
+		});
+
+		socket.on('your_profile', (msg) => console.log('your profile:', msg));
+		socket.on('authentication_failed', (msg) =>
+			console.log('authentication_failed:', msg)
+		);
+	</script>
+</html>
