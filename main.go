@@ -9,9 +9,11 @@ import (
 	"log"
 	"os"
 	"server/components/appctx"
+	"server/memcache"
 	"server/middleware"
 	"server/module/restaurant/transport/ginrestaurant"
 	ginrestaurantlike "server/module/restaurantlike/transport/ginrestauraurantlike"
+	userstorage "server/module/user/storage"
 	"server/module/user/transport/ginuser"
 	"server/skio"
 
@@ -56,6 +58,9 @@ func main() {
 
 	appContext := appctx.NewAppContext(db, secret)
 
+	userStore := userstorage.NewSQLStore(appContext.GetMainDBConnection())
+	userCachingStore := memcache.NewUserCaching(memcache.NewCaching(), userStore)
+
 	r := gin.Default()
 	r.StaticFile("/demo/", "./socket.html")
 	r.Use(middleware.Recover(appContext))
@@ -63,9 +68,9 @@ func main() {
 
 	v1.POST("/register", ginuser.Register(appContext))
 	v1.POST("/login", ginuser.Login(appContext))
-	v1.GET("/profile", middleware.RequiredAuthen(appContext), ginuser.Profile(appContext))
+	v1.GET("/profile", middleware.RequiredAuthen(appContext, userCachingStore), ginuser.Profile(appContext))
 
-	restaurants := v1.Group("/restaurants", middleware.RequiredAuthen(appContext))
+	restaurants := v1.Group("/restaurants", middleware.RequiredAuthen(appContext, userCachingStore))
 	restaurants.POST("/", ginrestaurant.CreateRestaurant(appContext))
 	restaurants.GET("/:id", ginrestaurant.FindRestaurant(appContext))
 	restaurants.GET("/", ginrestaurant.ListRestaurant(appContext))
