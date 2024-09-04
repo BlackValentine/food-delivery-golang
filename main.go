@@ -1,6 +1,11 @@
 package main
 
 import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+
 	"log"
 	"os"
 	"server/components/appctx"
@@ -10,8 +15,10 @@ import (
 	"server/module/user/transport/ginuser"
 	"server/skio"
 
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	jg "go.opencensus.io/exporter/jaeger"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/trace"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -74,5 +81,24 @@ func main() {
 
 	_ = rtEngine.Run(appContext, r)
 
-	r.Run(":" + os.Getenv("PORT"))
+	je, err := jg.NewExporter(jg.Options{
+		AgentEndpoint: "localhost:6831",
+		Process:       jg.Process{ServiceName: "food-delivery"},
+	})
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	trace.RegisterExporter(je)
+	trace.ApplyConfig(trace.Config{DefaultSampler: trace.ProbabilitySampler((1))})
+
+	http.ListenAndServe(
+		":"+os.Getenv("PORT"),
+		&ochttp.Handler{
+			Handler: r,
+		},
+	)
+
+	// r.Run(":" + os.Getenv("PORT"))
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"server/common"
 	restaurantmodel "server/module/restaurant/model"
+
+	"go.opencensus.io/trace"
 )
 
 type ListRestaurantStore interface {
@@ -33,7 +35,9 @@ func (biz *listRestaurantBiz) ListRestaurant(
 	filter *restaurantmodel.Filter,
 	paging *common.Paging,
 ) ([]restaurantmodel.Restaurant, error) {
-	result, err := biz.store.ListDataWithCondition(context, filter, paging, "User")
+	ctx1, span := trace.StartSpan(context, "biz.list_restaurant")
+	result, err := biz.store.ListDataWithCondition(ctx1, filter, paging, "User")
+	span.End()
 	if err != nil {
 		return nil, err
 	}

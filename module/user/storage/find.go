@@ -5,6 +5,7 @@ import (
 	"server/common"
 	usermodel "server/module/user/model"
 
+	"go.opencensus.io/trace"
 	"gorm.io/gorm"
 )
 
@@ -18,6 +19,9 @@ func (s *sqlStore) FindUser(
 	for i := range moreKey {
 		db = db.Preload(moreKey[i])
 	}
+
+	_, span := trace.StartSpan(ctx, "store.user.find_user")
+	defer span.End()
 
 	var user usermodel.User
 	if err := s.db.Where(condition).First(&user).Error; err != nil {
